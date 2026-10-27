@@ -926,6 +926,8 @@ class ApplyPatchAction:
             context_wrapper=context_wrapper,
         )
         call_id = extract_apply_patch_call_id(call.tool_call)
+        for operation in operations:
+            operation.call_id = call_id
         current_item = ToolApprovalItem(
             agent=agent,
             raw_item=call.tool_call,

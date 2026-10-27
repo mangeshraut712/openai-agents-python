@@ -21,6 +21,7 @@ class ApplyPatchOperation:
     diff: str | None = None
     ctx_wrapper: RunContextWrapper | None = None
     move_to: str | None = None
+    call_id: str | None = None
 
 
 @dataclass(**_DATACLASS_KWARGS)

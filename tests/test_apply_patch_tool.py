@@ -114,6 +114,7 @@ async def test_apply_patch_tool_success() -> None:
     assert raw_item["call_id"] == "call_apply"
     assert editor.operations[0].type == "update_file"
     assert editor.operations[0].ctx_wrapper is context_wrapper
+    assert editor.operations[0].call_id == "call_apply"
     assert isinstance(raw_item["output"], str)
     assert raw_item["output"].startswith("Updated tasks.md")
     input_payload = result.to_input_item()
@@ -121,6 +122,51 @@ async def test_apply_patch_tool_success() -> None:
     payload_dict = cast(dict[str, Any], input_payload)
     assert payload_dict["type"] == "apply_patch_call_output"
     assert payload_dict["status"] == "completed"
+
+
+
+@pytest.mark.asyncio
+async def test_apply_patch_operations_share_call_id() -> None:
+    """Every operation in one apply_patch call carries that call's id."""
+
+    @dataclass
+    class MultiOpCall:
+        type: str
+        call_id: str
+        operations: list[dict[str, Any]]
+
+        def model_dump(self, **_kwargs: Any) -> dict[str, Any]:
+            return {
+                "type": self.type,
+                "call_id": self.call_id,
+                "operations": self.operations,
+            }
+
+    editor = RecordingEditor()
+    tool = ApplyPatchTool(editor=editor)
+    ctx = make_context_wrapper()
+    agent = Agent(name="patcher", tools=[tool])
+    tool_call = MultiOpCall(
+        type="apply_patch_call",
+        call_id="call_multi",
+        operations=[
+            {"type": "create_file", "path": "a.txt", "diff": "+a\n"},
+            {"type": "update_file", "path": "b.txt", "diff": "-x\n+y\n"},
+        ],
+    )
+    tool_run = ToolRunApplyPatchCall(tool_call=tool_call, apply_patch_tool=tool)
+
+    result = await ApplyPatchAction.execute(
+        agent=agent,
+        call=tool_run,
+        hooks=RunHooks[Any](),
+        context_wrapper=ctx,
+        config=RunConfig(),
+    )
+
+    assert isinstance(result, ToolCallOutputItem)
+    assert [op.call_id for op in editor.operations] == ["call_multi", "call_multi"]
+    assert [op.path for op in editor.operations] == ["a.txt", "b.txt"]
 
 
 @pytest.mark.asyncio
