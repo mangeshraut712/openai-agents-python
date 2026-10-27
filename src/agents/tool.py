@@ -99,7 +99,7 @@ _TOOL_CALLERS: tuple[ToolCaller, ...] = ("direct", "programmatic")
 
 ToolFunctionWithoutContext = Callable[ToolParams, Any]
 ToolFunctionWithContext = Callable[Concatenate[RunContextWrapper[Any], ToolParams], Any]
-ToolFunctionWithToolContext = Callable[Concatenate[ToolContext, ToolParams], Any]
+ToolFunctionWithToolContext = Callable[Concatenate[ToolContext[Any], ToolParams], Any]
 
 ToolFunction = (
     ToolFunctionWithoutContext[ToolParams]
